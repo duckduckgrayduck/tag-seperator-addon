@@ -42,7 +42,7 @@ class SeperateTags(AddOn):
             document.data["_tag"] = deduped
             self.client.patch(
                 f"documents/{document.id}/",
-                json={"data": data},
+                json={"data": document.data},
             )
 
 
