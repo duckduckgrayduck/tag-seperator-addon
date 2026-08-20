@@ -31,15 +31,10 @@ class SeperateTags(AddOn):
             if not changed:
                 continue
 
-            # dedupe while preserving order
-            seen = set()
-            deduped = []
-            for tag in new_tags:
-                if tag not in seen:
-                    seen.add(tag)
-                    deduped.append(tag)
-
-            document.data["_tag"] = deduped
+            # In case a tag appears twice, only keep the first
+            # Example: Tag1 Tag1,Tag2 should become Tag1 Tag2
+            # Not Tag1 Tag1 Tag2
+            data["_tag"] = list(set(new_tags))
             self.client.patch(
                 f"documents/{document.id}/",
                 json={"data": document.data},
