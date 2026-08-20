@@ -34,7 +34,7 @@ class SeperateTags(AddOn):
             # In case a tag appears twice, only keep the first
             # Example: Tag1 Tag1,Tag2 should become Tag1 Tag2
             # Not Tag1 Tag1 Tag2
-            data["_tag"] = list(set(new_tags))
+            document.data["_tag"] = list(set(new_tags))
             self.client.patch(
                 f"documents/{document.id}/",
                 json={"data": document.data},
