@@ -1,41 +1,50 @@
 """
-This is a hello world add-on for DocumentCloud.
-
-It demonstrates how to write a add-on which can be activated from the
-DocumentCloud add-on system and run using Github Actions.  It receives data
-from DocumentCloud via the request dispatch and writes data back to
-DocumentCloud using the standard API
+This Add-On takes a look at a document's tags and if any of them are comma delimited, splits them
 """
-
+import time
 from documentcloud.addon import AddOn
 
 
-class HelloWorld(AddOn):
+class SeperateTags(AddOn):
     """An example Add-On for DocumentCloud."""
 
     def main(self):
         """The main add-on functionality goes here."""
-        # Add a custom user agent here to positively identify yourself 
-        self.client.session.headers.update({'User-Agent': 'Hello World Add-On'})
+        self.client.session.headers.update({"User-Agent": "Tag Seperator"})
 
-        # fetch your add-on specific data
-        name = self.data.get("name", "world")
-
-        self.set_message("Hello World start!")
-
-        # add a hello note to the first page of each selected document
         for document in self.get_documents():
-            # get_documents will iterate through all documents efficiently,
-            # either selected or by query, dependeing on which is passed in
-            document.annotations.create(f"Hello {name}!", 0)
+            tags = document.data.get("_tag", [])
+            if not tags:
+                continue
 
-        with open("hello.txt", "w+") as file_:
-            file_.write("Hello world!")
-            self.upload_file(file_)
+            new_tags = []
+            changed = False
+            for tag in tags:
+                if "," in tag:
+                    changed = True
+                    new_tags.extend(
+                        part.strip() for part in tag.split(",") if part.strip()
+                    )
+                else:
+                    new_tags.append(tag)
 
-        self.set_message("Hello World end!")
-        self.send_mail("Hello World!", "We finished!")
+            if not changed:
+                continue
+
+            # dedupe while preserving order
+            seen = set()
+            deduped = []
+            for tag in new_tags:
+                if tag not in seen:
+                    seen.add(tag)
+                    deduped.append(tag)
+
+            document.data["_tag"] = deduped
+            self.client.patch(
+                f"documents/{document.id}/",
+                json={"data": data},
+            )
 
 
 if __name__ == "__main__":
-    HelloWorld().main()
+    SeperateTags().main()
